@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaycityIN - 키 관리</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #4fc3f7;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .card h2 {
+            margin-bottom: 15px;
+            color: #81d4fa;
+            font-size: 18px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b0bec5;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #37474f;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 14px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #4fc3f7;
+            color: #000;
+        }
+        .btn-primary:hover {
+            background: #29b6f6;
+        }
+        .btn-danger {
+            background: #ef5350;
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #e53935;
+        }
+        .btn-warning {
+            background: #ffb74d;
+            color: #000;
+        }
+        .btn-warning:hover {
+            background: #ffa726;
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        th {
+            color: #4fc3f7;
+            font-weight: 600;
+        }
+        .status-active {
+            color: #69f0ae;
+        }
+        .status-expired {
+            color: #ef5350;
+        }
+        .status-unbound {
+            color: #ffb74d;
+        }
+        .generated-key {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 18px;
+            text-align: center;
+            color: #69f0ae;
+            margin-top: 10px;
+            user-select: all;
+        }
+        .alert {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .alert-success {
+            background: rgba(105, 240, 174, 0.2);
+            border: 1px solid #69f0ae;
+            color: #69f0ae;
+        }
+        .alert-error {
+            background: rgba(239, 83, 80, 0.2);
+            border: 1px solid #ef5350;
+            color: #ef5350;
+        }
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+        .row > * {
+            flex: 1;
+        }
+        #message {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 RaycityIN 키 관리</h1>
+        
+        <div id="message" class="alert"></div>
+        
+        <!-- 키 발급 -->
+        <div class="card">
+            <h2>➕ 새 키 발급</h2>
+            <div class="row">
+                <div class="form-group">
+                    <label>키 형식</label>
+                    <select id="keyFormat">
+                        <option value="random">랜덤 생성</option>
+                        <option value="custom">직접 입력</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>유효 기간</label>
+                    <select id="duration">
+                        <option value="0">무제한</option>
+                        <option value="1">1일</option>
+                        <option value="7">7일</option>
+                        <option value="30">30일</option>
+                        <option value="90">90일</option>
+                        <option value="365">365일</option>
+                        <option value="custom">직접 입력</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" id="customKeyGroup" style="display:none;">
+                <label>키 직접 입력</label>
+                <input type="text" id="customKey" placeholder="XXXX-XXXX-XXXX-XXXX">
+            </div>
+            <div class="form-group" id="customDaysGroup" style="display:none;">
+                <label>기간 (일)</label>
+                <input type="number" id="customDays" placeholder="일 수 입력" min="1">
+            </div>
+            <button class="btn-primary" onclick="generateKey()">키 발급</button>
+            <div id="generatedKey" class="generated-key" style="display:none;"></div>
+        </div>
+        
+        <!-- 키 목록 -->
+        <div class="card">
+            <h2>📋 발급된 키 목록</h2>
+            <button class="btn-primary btn-sm" onclick="loadKeys()" style="margin-bottom:15px;">새로고침</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>키</th>
+                        <th>상태</th>
+                        <th>HWID</th>
+                        <th>만료일</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="keyList">
+                    <tr><td colspan="5" style="text-align:center;color:#78909c;">로딩 중...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://127.0.0.1:3000';
+        const ADMIN_KEY = 'SUPER_SECRET_ADMIN_KEY';
+        
+        // 키 형식 토글
+        document.getElementById('keyFormat').addEventListener('change', function() {
+            document.getElementById('customKeyGroup').style.display = 
+                this.value === 'custom' ? 'block' : 'none';
+        });
+        
+        // 기간 토글
+        document.getElementById('duration').addEventListener('change', function() {
+            document.getElementById('customDaysGroup').style.display = 
+                this.value === 'custom' ? 'block' : 'none';
+        });
+        
+        // 메시지 표시
+        function showMessage(text, isError = false) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'alert ' + (isError ? 'alert-error' : 'alert-success');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        }
+        
+        // 랜덤 키 생성
+        function randomKey() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let key = '';
+            for (let i = 0; i < 4; i++) {
+                if (i > 0) key += '-';
+                for (let j = 0; j < 4; j++) {
+                    key += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+            }
+            return key;
+        }
+        
+        // 키 발급
+        async function generateKey() {
+            const format = document.getElementById('keyFormat').value;
+            const durationSelect = document.getElementById('duration').value;
+            
+            let licenseKey = format === 'custom' 
+                ? document.getElementById('customKey').value 
+                : randomKey();
+            
+            if (!licenseKey) {
+                showMessage('키를 입력하세요', true);
+                return;
+            }
+            
+            let days = 0;
+            if (durationSelect === 'custom') {
+                days = parseInt(document.getElementById('customDays').value) || 0;
+            } else {
+                days = parseInt(durationSelect);
+            }
+            
+            let expires = null;
+            if (days > 0) {
+                const date = new Date();
+                date.setDate(date.getDate() + days);
+                expires = date.toISOString();
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/api/admin/add-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        adminKey: ADMIN_KEY,
+                        licenseKey: licenseKey,
+                        expires: expires
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('generatedKey').textContent = licenseKey;
+                    document.getElementById('generatedKey').style.display = 'block';
+                    showMessage('키가 발급되었습니다!');
+                    loadKeys();
+                } else {
+                    showMessage('발급 실패', true);
+                }
+            } catch (e) {
+                showMessage('서버 연결 실패', true);
+            }
+        }
+        
+        // 키 목록 로드
+        async function loadKeys() {
+            try {
+                const res = await fetch(`${API_URL}/api/admin/list-keys?adminKey=${ADMIN_KEY}`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    const tbody = document.getElementById('keyList');
+                    if (data.keys.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#78909c;">발급된 키가 없습니다</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.keys.map(k => {
+                        const now = new Date();
+                        const expired = k.expires && new Date(k.expires) < now;
+                        let statusClass, statusText;
+                        
+                        if (expired) {
+                            statusClass = 'status-expired';
+                            statusText = '만료됨';
+                        } else if (k.bound) {
+                            statusClass = 'status-active';
+                            statusText = '사용 중';
+                        } else {
+                            statusClass = 'status-unbound';
+                            statusText = '미사용';
+                        }
+                        
+                        const expiresText = k.expires 
+                            ? new Date(k.expires).toLocaleDateString('ko-KR')
+                            : '무제한';
+                        
+                        return `
+                            <tr>
+                                <td style="font-family:monospace;">${k.key}</td>
+                                <td class="${statusClass}">${statusText}</td>
+                                <td style="font-size:12px;color:#78909c;">${k.hwid || '-'}</td>
+                                <td>${expiresText}</td>
+                                <td>
+                                    <button class="btn-warning btn-sm" onclick="resetKey('${k.key}')">리셋</button>
+                                    <button class="btn-danger btn-sm" onclick="deleteKey('${k.key}')">삭제</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                document.getElementById('keyList').innerHTML = 
+                    '<tr><td colspan="5" style="text-align:center;color:#ef5350;">서버 연결 실패</td></tr>';
+            }
+        }
+        
+        // 키 리셋 (HWID 해제)
+        async function resetKey(key) {
+            if (!confirm(`${key} 키의 HWID를 리셋할까요?`)) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/admin/reset-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        adminKey: ADMIN_KEY,
+                        licenseKey: key
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showMessage('HWID가 리셋되었습니다');
+                    loadKeys();
+                } else {
+                    showMessage('리셋 실패', true);
+                }
+            } catch (e) {
+                showMessage('서버 연결 실패', true);
+            }
+        }
+        
+        // 키 삭제
+        async function deleteKey(key) {
+            if (!confirm(`${key} 키를 삭제할까요?`)) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/admin/delete-key`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        adminKey: ADMIN_KEY,
+                        licenseKey: key
+                    })
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    showMessage('키가 삭제되었습니다');
+                    loadKeys();
+                } else {
+                    showMessage('삭제 실패', true);
+                }
+            } catch (e) {
+                showMessage('서버 연결 실패', true);
+            }
+        }
+        
+        // 페이지 로드 시 키 목록 불러오기
+        loadKeys();
+    </script>
+</body>
+</html>
