@@ -186,7 +186,7 @@
   },
   {
     "key": "OQGA-PTL0-0628-NJPI",
-    "hwid": null,
+    "hwid": "B166A2CC-TERA-138-Administrator",
     "expires": null
   },
   {
@@ -476,7 +476,7 @@
   },
   {
     "key": "MIBJ-KGGF-6VVA-ROL8",
-    "hwid": null,
+    "hwid": "6840E7D9-Desktop-6UDSX-bhyen",
     "expires": null
   },
   {
@@ -516,6 +516,11 @@
   },
   {
     "key": "pass",
+    "hwid": null,
+    "expires": null
+  },
+  {
+    "key": "sia",
     "hwid": null,
     "expires": null
   }
